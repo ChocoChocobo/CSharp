@@ -1,40 +1,56 @@
-﻿using System; // системные классы и функции
-using System.Collections.Generic; // коллекции, наподобие List, Dictionary и так далее
-// using - подключение классов в файл. Наподобие #include в C++
-// В отличие от C++ C# позволяет включить в скомпилированный файл только те классы и функции, которые были действительно использованы. Остальное из программы подчищает CLR.
+﻿using System;
 
-namespace CSharp // пространство имен
+namespace CSharp
 {
     class Source
     {
         static void Main(string[] args)
         {
-            string userName = "Default";
-            string userPassword = "Default";
-
-            int userChoice = 0;
-            do
+            int[,] array2D = new int[5,5];
+            // 0 0 0 0 0
+            // 0 0 0 0 0
+            // 0 0 0 0 0
+            // 0 0 0 0 0
+            // 0 0 0 0 0
+            // приставка u говорит о беззнаковом типе данных
+            uint[,] intArray2D =
             {
-                Console.WriteLine("Вы входите в систему. Для продолжения введите 1. Для выхода введите 0:");
-                userChoice = Convert.ToInt32(Console.ReadLine());
-                if (userChoice == 0) break;
+                {5, 6, 7, 8, 9 },
+                {1, 2, 3, 4, 5 },
+                {1, 2, 3, 4, 5 },
+                {1, 2, 3, 4, 5 },
+                {1, 2, 3, 4, 5 },
+            };
 
-                Console.WriteLine("Введите имя: ");
-                userName = Console.ReadLine();
-                
-                Console.WriteLine("Введите пароль: ");
-                userPassword = Console.ReadLine();
-
-                if (userName == "Апполинарий" && userPassword == "krevetka")
+            /*for (int i = 0; i < array2D.GetLength(0); i++)
+            {
+                for (int j = 0; j < array2D.GetLength(1); j++)
                 {
-                    Console.WriteLine("Вы вошли в систему!");
-                    break;
+                    array2D[i, j] = j * 2;
+                    Console.WriteLine($"({i},{j}). {array2D[i, j]}");
                 }
-            } while (userChoice != 0);
+            }*/
 
-            
+            for (int i = 0; i < intArray2D.GetLength(0); i++)
+            {
+                for (int j = 0; j < intArray2D.GetLength(1); j++)
+                {
+                    Console.Write($"({i},{j}). {intArray2D[i, j]}");
+                }
+                Console.WriteLine();
+            }
         }
     }
 }
 
-// Компиляция программы на языке C# всегда будет загружаться в память гораздо медленее в первый раз, чем в последующие разы. На это влияет механизм интерпретации языка. В первый раз программе необходимо пройти интерпретацию, после чего будет создан скомпилированный исполняемый файл, который будет гораздо быстрее запускаться
+//      Практика
+// В двумерном массиве найти максимальный элемент для каждой строки
+// Работать со следующим массивом или сгенерировать такой самостоятельно:
+/*          uint[,] intArray2D =
+            {
+                {5, 6, 7, 8, 9 },
+                {70, 2, 3, 4, 5 },
+                {1, 80, 3, 4, 5 },
+                {1, 40, 3, 4, 5 },
+                {1, 2, 25, 4, 5 },
+            };*/
