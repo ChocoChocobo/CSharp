@@ -1,59 +1,49 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Numerics;
 
-enum Days
+// Встроенный интерфейс INumber представляет собой реализацию числа
+// Обощенный класс вектора
+class Vector2D<T> where T : INumber<T>
 {
-    // Перечисления (enum) - простейший способ организации данных при котором перечисляемые значения имеют порядковый номер.
-    // В качестве значения перечисления выступает слово перечисления, а в качестве порядкового номера - 32-битный int 
-    // Неявно у перечисления enum отсчет начинается с 0
-    // Для того, чтобы изменить порядковый номер всех значений, можно им явно задать таковой через оператор '='. В качестве альтернативы можно задать порядковый номер первому значению, а остальные автоматически подстроятся
-    Monday = 1,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday
+    T x;
+    T y;
+
+    public Vector2D(T x, T y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    public T X
+    {
+        get { return x; }
+        set { x = value; }
+    }
+
+    public T Y
+    {
+        get { return y; }
+        set {  y = value; }
+    }
+
+    // Переопределение функции вывода в поток
+    public override string ToString()
+    {
+        return $"({x},{y})";
+    }
 }
 
 class Source
 {    
     static void Main(string[] args)
     {
-        Days days = Days.Monday;
-        int userInput = 0;
-
-        while(true)
-        {
-            Console.WriteLine("Введите день недели к которому хотите перейти: ");
-            userInput = Convert.ToInt32(Console.ReadLine());
-            
-            // Перечисление работает как обычный тип данных при использовании его в логических конструкциях 
-            switch(userInput)
-            {
-                case 1:
-                    days = Days.Monday;  
-                    // Инициализация необходимых объектов
-                    break;
-                case 2:
-                    days = Days.Tuesday;
-                    // Инициализация необходимых объектов
-                    break;
-            }
-            switch(days)
-            {
-                case Days.Monday:
-                    // Выполняется код в соотвествии с понедельником
-                    break;
-                case Days.Tuesday:
-                    // Выполняетсся код в соответствии со вторником
-                    break;
-                // Остальные дни недели
-            }
-            if (days == Days.Monday) // Логическое сравнение текущего объекта перечисления с значением перечисления
-            {
-                // Выполнение кода
-            }
-        }
+        Vector2D<int> intVector = new Vector2D<int>(5, 5);
+        Console.WriteLine(intVector); // При выводе объекта класса будет вызываться переопределяемый метод ToString()
     }
 }
+
+//      Практика
+// 1. Создать объекты класса Vector2D с типами данных float, bool, uint
+// 2. Создать класс Vector3D наподобие Vector2D, определив для его полей нужные свойства
+// 3. 
