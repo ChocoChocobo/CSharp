@@ -2,35 +2,19 @@
 using System.Diagnostics;
 using System.Numerics;
 
-// Встроенный интерфейс INumber представляет собой реализацию числа
-// Обощенный класс вектора
-class Vector2D<T> where T : INumber<T>
+struct Point // У функций и конструкторов необходимо в качестве модификатора доступа указывать public, если поле доступно вне объекта класса
 {
-    T x;
-    T y;
+    public float x, y;
 
-    public Vector2D(T x, T y)
+    public Point(float x, float y)
     {
-        this.x = x;
+        this.x = x; 
         this.y = y;
     }
 
-    public T X
+    public void Draw()
     {
-        get { return x; }
-        set { x = value; }
-    }
-
-    public T Y
-    {
-        get { return y; }
-        set {  y = value; }
-    }
-
-    // Переопределение функции вывода в поток
-    public override string ToString()
-    {
-        return $"({x},{y})";
+        Console.WriteLine($"Всем привет! Я точка ({x},{y}).");
     }
 }
 
@@ -38,12 +22,14 @@ class Source
 {    
     static void Main(string[] args)
     {
-        Vector2D<int> intVector = new Vector2D<int>(5, 5);
-        Console.WriteLine(intVector); // При выводе объекта класса будет вызываться переопределяемый метод ToString()
+        Point point = new Point(5.0f, 6.0f);
+        point.Draw();
+        Point point1 = point;
+        point1.Draw();
     }
 }
 
 //      Практика
-// 1. Создать объекты класса Vector2D с типами данных float, bool, uint
-// 2. Создать класс Vector3D наподобие Vector2D, определив для его полей нужные свойства
-// 3. 
+// Придумать и описать объект в виде структуры. Учесть особенности того для чего используется структура!
+// Предусмотреть минимум две переменные и одну функцию, которая бы выводила информацию в консоль.
+// В Main() создать объект структуры и вызвать функцию.
