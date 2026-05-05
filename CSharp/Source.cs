@@ -59,24 +59,42 @@ class Source
 
         List<Student> students = new List<Student>
         {
-            new Student(1, 0, "Андрей", 10),
-            new Student(2, 2, "Давид", 1),
-            new Student(3, 1, "Рия", 5),
-            new Student(4, 3, "Расул", 120000),
+            new Student(1, colleges[0].Id, "Андрей", 10),
+            new Student(2, colleges[1].Id, "Давид", 1),
+            new Student(3, colleges[0].Id, "Рия", 5),
+            new Student(4, colleges[0].Id, "Лев", 5),
+            new Student(5, colleges[3].Id, "Платон", 5),
+            new Student(6, colleges[1].Id, "Алексей", 5),
+            new Student(7, colleges[0].Id, "Филипп", 5),
+            new Student(8, colleges[3].Id, "Родин", 5),
+            new Student(9, colleges[3].Id, "Расул", 120000),
         };
 
         // В объект поместили перечисляемый элемент принимающий интерфейс IGrouping
-        var collegeStudents = from student in students group student by student.CollegeId;        
+        var collegeStudents = from student in students group student by student.CollegeId;
 
         // При группировке можно сделать выборку в коллекцию объектов класса
-        var collegeCount = from student in students // берем студента из коллекции студентов
+        /*var collegeCount = from student in students // берем студента из коллекции студентов
                            group student by student.CollegeId into // группируем их по id
-                           collegeGroup select new { id = collegeGroup.Key, count = collegeGroup.Count() }; // 
+                           collegeGroup select new 
+                           { 
+                               id = collegeGroup.Key, 
+                               student = from stud in collegeGroup select stud 
+                           };*/ // создание поля, куда заносятся все студенты
+        var collegeCount = from student in students // берем студента из коллекции студентов
+                           // для того, чтобы соединить коллекции, необходимо их связать
+                           join collegeJoin in colleges // выборка для соединения
+                           on student.CollegeId equals collegeJoin.Id // условие соединения
+                           select new
+                           {
+                               studentName = student.Name,
+                               studentScore = student.Score,
+                               collegeName = collegeJoin.Name,
+                           };
 
         foreach (var item in collegeCount)
         {
-            Console.WriteLine(item);
-            Console.WriteLine($"id колледжа: {item.id}, количество: {item.count}");
+            Console.WriteLine($"Имя колледжа: {item.collegeName}, в нем учится {item.studentName}, и его оценка {item.studentScore}");
         }
     }
 }
@@ -86,7 +104,10 @@ class Source
 // from объект in название_коллекции group объект by поле_объекта_или_свойство
 // При использовании формируется следующий ассоциативный ряд IGrouping<Key, Value>
 // Key - отвечает за значение поля или свойства, по которому производилась группировка, а Value - коллекция объектов из коллекции, у которых заданное свойство имеет значение.
+// Для соединения нескольких коллекций применяется оператор join:
+// from объект in коллекция join объект2 in коллекция
 
-//      Практика github.com/ChocoChocobo
-// 1. Расширить существующий студентов на 10 элементов
-// 2. С помощью LINQ-запроса делать группировку объектов студентов по оценкам и сделать выборку в коллекцию объектов, которая должна содержать имя и оценку.
+//      Практика
+// 1. Создать новый класс военкомата с публичными полями имени и id, для них определить свойства.
+// 2. У класса студента добавить новое поле с id военкомата. Отредактировать конструктор.
+// 3. Затем с помощью join объединять коллекции студентов и военкоматов и связывать их id. На основе них делать выборку из имени студента, его оценки и имени военкомата.
