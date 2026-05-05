@@ -2,16 +2,31 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 
+// Класс учебного заведения для студента
+class College
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+
+    public College(int id, string? name)
+    {
+        Id = id;
+        Name = name;
+    }
+}
+
 // Класс-ячейка коллекции
 class Student
 {
     public int Id { get; set; }
+    public int CollegeId { get; set; }
     public string Name { get; set; }
     public uint Score { get; set; }
 
-    public Student(int id, string name, uint score)
+    public Student(int id, int collegeId, string name, uint score)
     {
         Id = id;
+        CollegeId = collegeId;
         Name = name;
         Score = score;
     }
@@ -33,32 +48,45 @@ class StudentPerformance
 class Source
 {    
     static void Main(string[] args)
-    {        
-        // Вариант инициализации коллекции с пользовательским типом данных
+    {
+        List<College> colleges = new List<College>
+        {
+            new College(0, "IT TOP"),
+            new College(1, "VOLSU"),
+            new College(2, "VSPU"),
+            new College(3, "ALABUGA"),
+        };
+
         List<Student> students = new List<Student>
         {
-            new Student(1, "Андрей", 10),
-            new Student(2, "Давид", 1),
-            new Student(3, "Рия", 5),
+            new Student(1, 0, "Андрей", 10),
+            new Student(2, 2, "Давид", 1),
+            new Student(3, 1, "Рия", 5),
+            new Student(4, 3, "Расул", 120000),
         };
-        // В переменную помещаем выборочные значения из коллекции в соответствии с условием
-        //            временный объект              обращение к полю
-        var names = from student in students select student.Name;
-        foreach (string item in names)
+
+        // В объект поместили перечисляемый элемент принимающий интерфейс IGrouping
+        var collegeStudents = from student in students group student by student.CollegeId;        
+
+        // При группировке можно сделать выборку в коллекцию объектов класса
+        var collegeCount = from student in students // берем студента из коллекции студентов
+                           group student by student.CollegeId into // группируем их по id
+                           collegeGroup select new { id = collegeGroup.Key, count = collegeGroup.Count() }; // 
+
+        foreach (var item in collegeCount)
         {
             Console.WriteLine(item);
-        }
-
-        var studentPerformances = from student in students select new StudentPerformance(student.Name, student.Score);
-        foreach (var item in studentPerformances)
-        {
-            Console.WriteLine($"Студент {item.Name} с оценкой {item.Score}");
+            Console.WriteLine($"id колледжа: {item.id}, количество: {item.count}");
         }
     }
 }
 
-//      Практика
-// 1. Создать элементарный класс животого, у которого есть поля имени, цвета, кол-ва ног
-// 2. Создать класс-агрегатор, у которого есть поля имени и кол-ва ног
-// 3. В Main создать список животных в количестве 5 объектов и с помощью LINQ-выражения в объект животных выбрать объекты класса-агрегатора
-// 4. Создать две очереди четырехногих и двуногих животных. При перечислении в цикле foreach всех объектов класса-агрегатора, сравнивать с полем кол-ва ног и помещать животных в очереди.
+//      Группировка и соединение LINQ
+// Для группировки используется оператор group by:
+// from объект in название_коллекции group объект by поле_объекта_или_свойство
+// При использовании формируется следующий ассоциативный ряд IGrouping<Key, Value>
+// Key - отвечает за значение поля или свойства, по которому производилась группировка, а Value - коллекция объектов из коллекции, у которых заданное свойство имеет значение.
+
+//      Практика github.com/ChocoChocobo
+// 1. Расширить существующий студентов на 10 элементов
+// 2. С помощью LINQ-запроса делать группировку объектов студентов по оценкам и сделать выборку в коллекцию объектов, которая должна содержать имя и оценку.
