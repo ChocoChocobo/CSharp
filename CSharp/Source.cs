@@ -1,16 +1,101 @@
-using Microsoft.Extensions.ObjectPool;
-using System.Text;
+// Интерфейс, позволяющий легко задать какому-либо объекту принадлежность к пулу объектов и реализовать функцию возвращения объекта в пул
+using static System.Net.Mime.MediaTypeNames;
 
-// Класс своей строки, повторной использующий объект StringBuilder
-class CustomString
+public interface IPoolable
 {
-    private static StringBuilder stringBuilder = new StringBuilder();
+    void Reset();
+}
 
-    public static string BuildText(string text)
+// class - позволяет сделать шаблонный параметр ссылкой
+// new() - требует от шаблонного параметра конструктор без параметров
+class ObjectPool<T> where T : class, IPoolable, new()
+{
+    // Выгоднее всего для реализации пула объектов использовать Stack, реализующий очередь
+    private Stack<T> objects;
+    private int maxSize;
+
+    public ObjectPool(int maxSize)
     {
-        stringBuilder.Clear();
-        stringBuilder.Append(text);
-        return stringBuilder.ToString();
+        this.maxSize = maxSize;
+
+        // Инициализация стэка
+        objects = new Stack<T>(maxSize);
+
+        // Заполнение стэка объектов в зависимости от вместимости
+        for (int i = 0; i < maxSize; i++)
+        {
+            objects.Push(new T());
+        }
+    }
+
+    // Функция, возвращающая доступное количество объектов в пуле
+    public int AvailableCount => objects.Count;
+
+    // Функция, отвечающая за возвращение объекта в пул
+    public void ReturnObject(T obj)
+    {
+        obj.Reset();
+        if (objects.Count < maxSize) objects.Push(obj);
+    }
+
+    // Функция, отвечающая за резервирование объекта и переиспользование его
+    public T RentObject()
+    {
+        if (objects.Count > 0)
+        {
+            return objects.Pop();
+        }
+        else
+        {
+            return new T();
+        }
+    }
+}
+
+class Bullet : IPoolable
+{
+    public float Speed {  get; set; }
+    public float Damage { get; set; }
+    public float X, Y;
+    public bool IsActive { get; set; }
+
+    public Bullet()
+    {
+        Speed = 0;
+        Damage = 0;
+        X = 0;
+        Y = 0;
+        IsActive = false;
+    }
+
+    public Bullet(float speed, float damage, float x, float y, bool isActive)
+    {
+        Speed = speed;
+        Damage = damage;
+        X = x;
+        Y = y;
+        IsActive = isActive;
+    }
+
+    // Функция, инициализирующая объект в пуле.
+    // В отличие от конструктора, который вызывается только один раз в самом начале, Init нужен для того, чтобы для уже созданного объекта можно было свободно изменить значения.
+    public void Init(float speed, float damage, float x, float y)
+    {
+        Speed = speed;
+        Damage = damage;
+        X = x;
+        Y = y;
+        IsActive = true;
+    }
+
+    // Очищает состояние объекта перед возвратом в пул, меняя флаг IsActive на false, обозначая, что объект не активен в пуле.
+    public void Reset()
+    {
+        Speed = 0;
+        Damage = 0;
+        X = 0;
+        Y = 0;
+        IsActive = false;
     }
 }
 
@@ -18,73 +103,20 @@ class Source
 {
     static void Main(string[] args)
     {
-        //----------------------------------------------------------------
-        //  РПМ Тема: кэширование, повторное использование памяти
-        //  Кэширование - это сохранение результата вычисления для повторного обращения к нему в дальнейшем. Это нужно для того, чтобы не выполнять дорогостоящее действие снова.
-        // Однако кэширование может быть не всегда полезно из-за копирования ресурсоемкого объекта. Помимо этого кэширование всегда должно сопровождаться пониманием того, насколько долго результат остается актуальным и пригодным.
-        // Что можно и нужно кэшировать:
-        // 1. Данные, которые редко или никогда не обновляются;
-        // 2. Данные, которые нужно использовать в качестве временной копии, для проведения манипуляций, не затрагивающих оригинал;
-        // 3. Результаты запросов, результаты вычислений, загруженные ресурсы, уже созданные объекты, промежуточные результаты сложных операций.
-        // Пример: программа многократно строит отчет с одними и теми же параметрами, эти итоговые параметры (текст) можно сохранить. Если система часто обращается к данным, которые меняются редко, то их можно сохранить.
+        ObjectPool<Bullet> bulletsPool = new ObjectPool<Bullet>(32);
 
-        // Повторное использование объектов - это прием, при котором вместо постоянного создания новых экземпляров объект используется повторно.
-        // CustomString.BuildText("РПО");
-
-        // Pooling - более формализованное название приема повторного использования объектов.Вместо того, чтобы создавать объекты при каждом обращении, в программе создается некий "пул", из которого возвращаются объекты. Можно представить пул объектов, как бассейн, в котором плавают повторно используемые объекты.
-        // В С# есть готовые классы, описывающие данный механизм: ObjectPool<T> и ArrayPool<T>        
-        // ObjectPool<CustomString> objectPool;
-        // ObjectPool необходимо установить через NuGet!!!!!!!!!
-        // Предназначен для хранения и повторного использования объектов. Подходит для временных объектов, которые могут часто создаваться по мере работы программы
-        // Псевдокод:
-        /*var obj = objectPool.Get();
-        try
+        for (int i = 0; i < 67; i++)
         {
-            obj.DoSomething();
+            Bullet bullet = bulletsPool.RentObject();
+            bullet.Init(6, 7, 0, 0);
+
+            // Логика объекта, который был взят из пула
+            Console.WriteLine($"Пуля {i} была выпущена! Осталось объектов в пуле: {bulletsPool.AvailableCount}");
+            
+            bulletsPool.ReturnObject(bullet);
         }
-        catch (Exception)
-        {
-
-            throw;
-        }
-        finally
-        {
-            objectPool.Return(obj);
-        }*/
-
-        // Время жизни кэша (TTL)
-        // Обозначает срок жизни кэша. Определяет сколько времени объект или результат считается актуальным.
-        // Если кэш хранит данные слишком долго, то они могут устареть. Если же кэш хранит данные слишком мало, то они могут и не успеть принести пользу.
-
-        // Инвалидация кэша
-        // Обозначает принудительное удаление или обновление устаревших кэшированных данных.
-        //----------------------------------------------------------------
-
-        for (int i = 0; i < 5; i++)
-        {
-            string result = BuildReport();
-            Console.WriteLine(result);
-        }
-    }
-
-    static string BuildReport()
-    {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        for (int i = 0; i <= 10000; i++)
-        {
-            stringBuilder.Append(i);
-            stringBuilder.Append(", ");
-        }
-
-        return stringBuilder.ToString();
     }
 }
 
-//      Практика 
-// В комментариях указать следующие ответы на вопросы:
-// 1. Определить в каких строках код выполняется повторно;
-// 2. Определить какие именно операции создают лишние выделения памяти.
-// Оптимизировать:
-// 1. С применением кэширования результата BuildReport;
-// 2. С применением повторного использования объекта StringBuilder.
+//      Практика
+// Заставить пул истощиться любым способом
