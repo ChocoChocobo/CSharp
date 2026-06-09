@@ -1,122 +1,51 @@
-// Интерфейс, позволяющий легко задать какому-либо объекту принадлежность к пулу объектов и реализовать функцию возвращения объекта в пул
-using static System.Net.Mime.MediaTypeNames;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running; // Пространство имен, отвечающее за выполнение бенчмарка в runtime (во время выполнения)
 
-public interface IPoolable
+// Класс для проведения бенчмарка по скорости нахождения искомого значения в коллекции
+[MemoryDiagnoser] // Атрибут BenchmarkDotNet
+public class SearchTest
 {
-    void Reset();
-}
+    private List<int> list = null;
+    private HashSet<int> set = null;
+    private int targetValue;
 
-// class - позволяет сделать шаблонный параметр ссылкой
-// new() - требует от шаблонного параметра конструктор без параметров
-class ObjectPool<T> where T : class, IPoolable, new()
-{
-    // Выгоднее всего для реализации пула объектов использовать Stack, реализующий очередь
-    private Stack<T> objects;
-    private int maxSize;
-
-    public ObjectPool(int maxSize)
+    // Функция, осуществляющая прогрев данных для бенчмарка
+    [GlobalSetup]
+    public void Setup()
     {
-        this.maxSize = maxSize;
+        list = new List<int>(10000);
+        set = new HashSet<int>();
 
-        // Инициализация стэка
-        objects = new Stack<T>(maxSize);
-
-        // Заполнение стэка объектов в зависимости от вместимости
-        for (int i = 0; i < maxSize; i++)
+        for (int i = 0; i < 10000; i++)
         {
-            objects.Push(new T());
+            list.Add(i);
+            set.Add(i);
         }
+
+        targetValue = 9999;
     }
 
-    // Функция, возвращающая доступное количество объектов в пуле
-    public int AvailableCount => objects.Count;
+    // Указание бенчмарку, что данная функция используется, как основа, с которой нужно проводить сравнение
+    [Benchmark(Baseline = true)]
+    public bool ListSearch()  => list.Contains(targetValue);
 
-    // Функция, отвечающая за возвращение объекта в пул
-    public void ReturnObject(T obj)
-    {
-        obj.Reset();
-        if (objects.Count < maxSize) objects.Push(obj);
-    }
-
-    // Функция, отвечающая за резервирование объекта и переиспользование его
-    public T RentObject()
-    {
-        if (objects.Count > 0)
-        {
-            return objects.Pop();
-        }
-        else
-        {
-            return new T();
-        }
-    }
-}
-
-class Bullet : IPoolable
-{
-    public float Speed {  get; set; }
-    public float Damage { get; set; }
-    public float X, Y;
-    public bool IsActive { get; set; }
-
-    public Bullet()
-    {
-        Speed = 0;
-        Damage = 0;
-        X = 0;
-        Y = 0;
-        IsActive = false;
-    }
-
-    public Bullet(float speed, float damage, float x, float y, bool isActive)
-    {
-        Speed = speed;
-        Damage = damage;
-        X = x;
-        Y = y;
-        IsActive = isActive;
-    }
-
-    // Функция, инициализирующая объект в пуле.
-    // В отличие от конструктора, который вызывается только один раз в самом начале, Init нужен для того, чтобы для уже созданного объекта можно было свободно изменить значения.
-    public void Init(float speed, float damage, float x, float y)
-    {
-        Speed = speed;
-        Damage = damage;
-        X = x;
-        Y = y;
-        IsActive = true;
-    }
-
-    // Очищает состояние объекта перед возвратом в пул, меняя флаг IsActive на false, обозначая, что объект не активен в пуле.
-    public void Reset()
-    {
-        Speed = 0;
-        Damage = 0;
-        X = 0;
-        Y = 0;
-        IsActive = false;
-    }
+    // Функция, которая является более оптимизированной
+    [Benchmark] public bool HashSetSearch() => set.Contains(targetValue);
 }
 
 class Source
 {
     static void Main(string[] args)
     {
-        ObjectPool<Bullet> bulletsPool = new ObjectPool<Bullet>(32);
-
-        for (int i = 0; i < 67; i++)
-        {
-            Bullet bullet = bulletsPool.RentObject();
-            bullet.Init(6, 7, 0, 0);
-
-            // Логика объекта, который был взят из пула
-            Console.WriteLine($"Пуля {i} была выпущена! Осталось объектов в пуле: {bulletsPool.AvailableCount}");
-            
-            bulletsPool.ReturnObject(bullet);
-        }
+        // Запуск бенчмарка
+        // Обязателен к запуску в Release версии программы
+        BenchmarkRunner.Run<SearchTest>();
     }
 }
 
 //      Практика
-// Заставить пул истощиться любым способом
+// 1. Написать класс заказа, у которого есть поля с Id, enum статусом заказа (новый, оплачено, доставлено, отменено), количеством денег за заказ.
+// 2. Написать класс для бенчмарка, в котором есть список заказов. В функции Setup() должна производиться инициализация списка объектами для бенчмаркинга, как делали на предыдущей паре.
+// 3. В классе бенчмарка написать две функции: SimpleSearch и LINQSearch. Все функции должны выполнять следующую логику: находить количество оплаченных заказов и возвращать строку с количеством и общей суммой в рублях. Первая функция должна осуществлять поиск просто перебирая список, а вторая с помощью LINQ.
+// 4. Установить BenchmarkDotNet с помощью NuGet. У класса бенчмарка и функций указать соответствующие атрибуты, как делали на занятии и провести бенчмаркинг в Main.
+// 5. В качестве ответа показать отчеты, которые были сформированы библиотекой и сделать выводы в комментариях.
