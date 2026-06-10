@@ -1,51 +1,73 @@
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running; // Пространство имен, отвечающее за выполнение бенчмарка в runtime (во время выполнения)
+using System.Reflection; // пространство имен, содержащее отражение
 
-// Класс для проведения бенчмарка по скорости нахождения искомого значения в коллекции
-[MemoryDiagnoser] // Атрибут BenchmarkDotNet
-public class SearchTest
+// Обычный класс, наследующийся от Атрибута, в котором определено все взаимодействие
+// Можно выставить ограничения на применение атрибута:
+[AttributeUsage(AttributeTargets.Class)]
+class AgeValidationAttribute : Attribute
 {
-    private List<int> list = null;
-    private HashSet<int> set = null;
-    private int targetValue;
+    public float Age { get; }
+    public AgeValidationAttribute() { }
+    public AgeValidationAttribute(float value) => Age = value;
+}
 
-    // Функция, осуществляющая прогрев данных для бенчмарка
-    [GlobalSetup]
-    public void Setup()
+// Применение атрибута
+//[AgeValidationAttribute]
+[AgeValidationAttribute(18.0f)]
+class Student
+{
+    public string Name { get; set; } = "John";
+    public float Age { get; set; } = 18.0f;
+    public int Score { get; set; } = 2;
+    public bool IsAlabuga { get; set; } = false;
+    public Student(string name, float age, int score, bool isAlabuga)
     {
-        list = new List<int>(10000);
-        set = new HashSet<int>();
-
-        for (int i = 0; i < 10000; i++)
-        {
-            list.Add(i);
-            set.Add(i);
-        }
-
-        targetValue = 9999;
+        Name = name;
+        Age = age;
+        Score = score;
+        IsAlabuga = isAlabuga;
     }
-
-    // Указание бенчмарку, что данная функция используется, как основа, с которой нужно проводить сравнение
-    [Benchmark(Baseline = true)]
-    public bool ListSearch()  => list.Contains(targetValue);
-
-    // Функция, которая является более оптимизированной
-    [Benchmark] public bool HashSetSearch() => set.Contains(targetValue);
 }
 
 class Source
 {
     static void Main(string[] args)
     {
-        // Запуск бенчмарка
-        // Обязателен к запуску в Release версии программы
-        BenchmarkRunner.Run<SearchTest>();
+        //      Тема: атрибуты
+        // Атрибуты представляют собой способ эффективного связывания...
+        Student student1 = new Student("David", 18, 1, true);
+        Student student2 = new Student("Alex", 17, 5, false);
+        Student student3 = new Student("Timur", 17, 3, false);
+        List<Student> students = new List<Student>();
+        students.Add(student1);
+        students.Add(student2);
+        students.Add(student3);
+
+        foreach (var student in students)
+        {
+            Console.WriteLine($"Совершеннолетний ли {student.Name}? - {ValidateAge(student)}");
+        }
+    }
+
+    static bool ValidateAge(Student student)
+    {
+        // Отражение представляет собой класс Type
+        //Type personType = student.GetType();
+        Type personType = typeof(Student);
+        // Получаем все атрибуты класса Student
+        object[] personAttributes = personType.GetCustomAttributes(false);
+        foreach (var attribute in personAttributes)
+        {
+            if (attribute is AgeValidationAttribute ageValidationAttribute)
+            {
+                return student.Age >= ageValidationAttribute.Age;
+            }
+        }
+        return true;
     }
 }
 
 //      Практика
-// 1. Написать класс заказа, у которого есть поля с Id, enum статусом заказа (новый, оплачено, доставлено, отменено), количеством денег за заказ.
-// 2. Написать класс для бенчмарка, в котором есть список заказов. В функции Setup() должна производиться инициализация списка объектами для бенчмаркинга, как делали на предыдущей паре.
-// 3. В классе бенчмарка написать две функции: SimpleSearch и LINQSearch. Все функции должны выполнять следующую логику: находить количество оплаченных заказов и возвращать строку с количеством и общей суммой в рублях. Первая функция должна осуществлять поиск просто перебирая список, а вторая с помощью LINQ.
-// 4. Установить BenchmarkDotNet с помощью NuGet. У класса бенчмарка и функций указать соответствующие атрибуты, как делали на занятии и провести бенчмаркинг в Main.
-// 5. В качестве ответа показать отчеты, которые были сформированы библиотекой и сделать выводы в комментариях.
+// 1. Написать программу, включающую в себя систему атрибутов и проверку характеристик игрового персонажа с помощью отражения. Нужно написать свой класс персонажа, пометить его свойства атрибутами и написать валидатор (наподобие с тем, как делали ValidateAge), который проверяет корректность параметров перед импровизированном началом игры. У персонажа переопределить функцию вывода ToString для тестов.
+// 2. Атрибуты: имени, здоровья, уровня, маны, класса, расы.
+// 3. Параметры должны иметь ограничения, например, здоровье не может быть отрицательным, уровень должен быть в заданном диапазоне, имя не должно быть пустым
+// 4. В Main продемонстрировать создание корректного персонажа с атрибутами и некорректного. ВЫвести перссонажей в консоль с помощью Console.WriteLine.
